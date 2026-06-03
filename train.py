@@ -16,11 +16,12 @@ device = 'cuda' if torch.cuda.is_available() else ('mps' if torch.backends.mps.i
 print(f"Using device: {device}\n")
 
 torch.manual_seed(42)
+torch.set_float32_matmul_precision('high')  # Enable TF32 for Tensor Cores
 
 # Training hyperparameters
 block_size = 1024     # Context length
-batch_size = 1        # Balanced batch size
-grad_accum_steps = 16
+batch_size = 16       # Balanced batch size
+grad_accum_steps = 1
 learning_rate = 5e-4
 max_iters = 5000
 eval_interval = 500
@@ -73,6 +74,8 @@ config = HRMConfig(
     dropout=dropout,
 )
 model = build_model(config).to(device)
+if device == 'cuda':
+    model = torch.compile(model)  # Compile model for massive speedup
 n_params = sum(p.numel() for p in model.parameters())
 print(f"Model parameters: {n_params/1e6:.2f}M\n")
 
@@ -114,7 +117,10 @@ for iteration in range(max_iters):
         n_cycles = int(torch.randint(1, H_cycles + 1, (1,)).item())
         # PrefixLM: random per-sequence prefix/continuation split.
         token_type_ids = sample_prefix_mask(batch_size)
-        _, loss = model(xb, yb, token_type_ids=token_type_ids, n_H_cycles=n_cycles)
+        
+        # Use mixed precision for Tensor Cores
+        with torch.autocast(device_type=device, dtype=torch.bfloat16 if device == 'cuda' else torch.float16):
+            _, loss = model(xb, yb, token_type_ids=token_type_ids, n_H_cycles=n_cycles)
 
         loss = loss / grad_accum_steps
         loss.backward()
