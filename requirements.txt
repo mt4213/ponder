@@ -1,3 +1,5 @@
 torch>=2.1
+datasets
+tiktoken
 # dev/test
 pytest>=7

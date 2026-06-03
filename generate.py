@@ -21,10 +21,11 @@ checkpoint = torch.load(checkpoint_path, map_location=device)
 # ==========================================
 # 2. Rebuild tokenizer from checkpoint
 # ==========================================
-char_to_ix = checkpoint['char_to_ix']
-ix_to_char = checkpoint['ix_to_char']
-encode = lambda s: [char_to_ix[c] for c in s]
-decode = lambda l: ''.join([ix_to_char[i] for i in l])
+import tiktoken
+tokenizer_name = checkpoint.get('tokenizer', 'cl100k_base')
+enc = tiktoken.get_encoding(tokenizer_name)
+encode = lambda s: enc.encode(s, allowed_special={"<|endoftext|>"})
+decode = lambda l: enc.decode(l)
 
 # ==========================================
 # 3. Rebuild model from checkpoint config
@@ -52,11 +53,7 @@ print("Model and weights successfully loaded.\n")
 # ==========================================
 input_prompt = "What is thy name?"
 
-if any(char not in char_to_ix for char in input_prompt):
-    print("Warning: Input contains characters not in vocabulary. Starting with space.")
-    encoded_prompt = [0]
-else:
-    encoded_prompt = encode(input_prompt)
+encoded_prompt = encode(input_prompt)
 
 context = torch.tensor([encoded_prompt], dtype=torch.long, device=device)
 
