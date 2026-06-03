@@ -20,8 +20,8 @@ torch.set_float32_matmul_precision('high')  # Enable TF32 for Tensor Cores
 
 # Training hyperparameters
 block_size = 1024     # Context length
-batch_size = 16       # Balanced batch size
-grad_accum_steps = 1
+batch_size = 4        # Balanced batch size
+grad_accum_steps = 4
 learning_rate = 5e-4
 max_iters = 5000
 eval_interval = 500
