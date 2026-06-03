@@ -73,7 +73,9 @@ config = HRMConfig(
 )
 
 model = build_model(config).to(device)
-model.load_state_dict(checkpoint['model_state_dict'])
+state_dict = checkpoint['model_state_dict']
+uncompiled_state_dict = {k.replace('_orig_mod.', ''): v for k, v in state_dict.items()}
+model.load_state_dict(uncompiled_state_dict)
 
 if device == 'cuda':
     model = torch.compile(model)

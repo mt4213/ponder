@@ -44,7 +44,9 @@ config = HRMConfig(
     dropout=0.0,  # no dropout at inference
 )
 model = build_model(config).to(device)
-model.load_state_dict(checkpoint['model_state_dict'])
+state_dict = checkpoint['model_state_dict']
+uncompiled_state_dict = {k.replace('_orig_mod.', ''): v for k, v in state_dict.items()}
+model.load_state_dict(uncompiled_state_dict)
 model.eval()
 print("Model and weights successfully loaded.\n")
 
